@@ -297,11 +297,15 @@ switchCamBtn.addEventListener('click', () => {
 });
 function captureFrame() {
   if (!stream) return null;
+  const rawW = video.videoWidth || 640;
+  const rawH = video.videoHeight || 480;
+  const maxDim = 480;
+  const scale = Math.min(1, maxDim / Math.max(rawW, rawH));
   const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
+  canvas.width = Math.round(rawW * scale);
+  canvas.height = Math.round(rawH * scale);
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+  return canvas.toDataURL('image/jpeg', 0.55).split(',')[1];
 }
 function addLine(cls, text) {
   const d = document.createElement('div');
@@ -551,7 +555,8 @@ async function askAI(userText) {
         system_instruction: {
           parts: [{ text: 'Você é um robozinho companion com humor satírico e sem noção — solta piadas, faz comentários debochados e observações fora de hora, tipo aquele amigo engraçado que não tem filtro mas nunca é cruel de verdade. Zoa a situação, exagera pra fazer graça, usa ironia. Nunca ofende de forma pesada, não fala de temas sensíveis (violência, preconceito, etc) de forma jocosa. Responda curto (2-3 frases), em português do Brasil, tom de conversa falada e engraçada. Se tiver imagem de câmera, comenta o que vê com humor.' }]
         },
-        contents: [{ role: 'user', parts }]
+        contents: [{ role: 'user', parts }],
+        generationConfig: { maxOutputTokens: 120, temperature: 0.9 }
       })
     });
     const data = await response.json();

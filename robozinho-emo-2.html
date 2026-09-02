@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Robozinho EMO</title>
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Robô EMO">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Robozinho EMO","short_name":"Robo EMO","start_url":".","display":"standalone","background_color":"%23000000","theme_color":"%23000000","orientation":"portrait","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%23000000%27/%3E%3Ccircle cx=%2732%27 cy=%2750%27 r=%2716%27 fill=%27%2300e5ff%27/%3E%3Ccircle cx=%2768%27 cy=%2750%27 r=%2716%27 fill=%27%2300e5ff%27/%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%23000000%27/%3E%3Ccircle cx=%2732%27 cy=%2750%27 r=%2716%27 fill=%27%2300e5ff%27/%3E%3Ccircle cx=%2768%27 cy=%2750%27 r=%2716%27 fill=%27%2300e5ff%27/%3E%3C/svg%3E">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    background: #000000;
+    color: #9aa0aa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100%;
+    overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+
+  /* ---------- Setup ---------- */
+  #setupPanel {
+    position: fixed; inset: 0; background: #000000; z-index: 50;
+    display: flex; flex-direction: column; justify-content: center; padding: 28px;
+  }
+  #setupPanel.hidden { display: none; }
+  #setupPanel h1 { font-size: 20px; margin-bottom: 6px; color: #00e5ff; text-shadow: 0 0 12px rgba(0,229,255,0.5); }
+  #setupPanel .sub { font-size: 13px; color: #666; margin-bottom: 20px; }
+  #setupPanel label { font-size: 12px; color: #888; display: block; margin-bottom: 6px; }
+  #setupPanel input {
+    width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #1a1a1a;
+    background: #0a0a0a; color: #ccc; font-size: 14px; margin-bottom: 10px;
+  }
+  #setupPanel .hint { font-size: 11.5px; color: #666; line-height: 1.6; margin-bottom: 18px; }
+  #setupPanel .hint a { color: #00e5ff; }
+  #saveKeyBtn {
+    width: 100%; padding: 15px; border-radius: 10px; border: none;
+    background: #00e5ff; color: #001014; font-size: 15px; font-weight: 700;
+    box-shadow: 0 0 20px rgba(0,229,255,0.4);
+  }
+  .compatNote {
+    margin-top: 16px; font-size: 11.5px; color: #a06a6a; line-height: 1.6;
+    padding: 12px; border: 1px solid #2a1010; border-radius: 10px; background: #0f0808;
+  }
+
+  /* ---------- Stage (rosto) ---------- */
+  #stage {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; touch-action: none; background: #000;
+  }
+  #glow {
+    position: absolute; width: 360px; height: 360px; border-radius: 50%;
+    background: radial-gradient(circle, var(--glowColor, rgba(0,229,255,0.10)), transparent 70%);
+    transition: background 0.5s ease; pointer-events: none;
+  }
+  #face { display: flex; gap: 44px; z-index: 2; position: relative; }
+
+  /* olho estilo EMO: círculo LED sólido, brilho tipo OLED */
+  .eye {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, var(--eyeCore, #7ff5ff), var(--eyeA, #00d9f0) 55%, var(--eyeB, #00a8c0) 100%);
+    position: relative;
+    box-shadow:
+      0 0 18px var(--eyeGlow, rgba(0,229,255,0.75)),
+      0 0 40px var(--eyeGlow2, rgba(0,229,255,0.35)),
+      0 0 70px var(--eyeGlow3, rgba(0,229,255,0.15));
+    transition: background 0.35s ease, box-shadow 0.35s ease, height 0.16s ease, width 0.25s ease, border-radius 0.25s ease, transform 0.15s ease;
+    transform: translateX(var(--tiltX, 0px));
+  }
+  .eye.blink { height: 6px; border-radius: 6px; }
+
+  /* olho feliz (carinho): vira arco tipo ^ , fechado de felicidade */
+  body.petted .eye {
+    height: 40px; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    transform: translateX(var(--tiltX, 0px)) scaleY(0.55);
+  }
+
+  /* olho assustado (movimento): estica bem grande e mais claro no centro */
+  body.startled .eye {
+    width: 84px; height: 84px;
+    --eyeCore: #ffffff;
+  }
+
+  /* olho pensando: achata um pouco e sobe/desce */
+  body.thinking .eye { animation: thinkDrift 1s infinite ease-in-out; }
+  body.thinking .eye:nth-child(2) { animation-delay: 0.18s; }
+  @keyframes thinkDrift { 0%,100%{ transform: translateX(var(--tiltX,0px)) translateY(0); } 50%{ transform: translateX(var(--tiltX,0px)) translateY(-10px); } }
+
+  /* piscar sonolento eventual, olho semicerrado no idle (leve) */
+  body:not(.listening):not(.thinking):not(.speaking):not(.petted):not(.startled) .eye {
+    height: 62px;
+  }
+
+  #mouth {
+    margin-top: 26px; width: 30px; height: 4px; border-radius: 4px;
+    background: var(--mouthColor, #133a42);
+    box-shadow: 0 0 8px var(--mouthGlow, rgba(0,229,255,0.2));
+    transition: all 0.25s ease; z-index: 2;
+  }
+  body.petted #mouth { width: 22px; height: 10px; border-radius: 0 0 22px 22px; background: transparent; border-bottom: 3px solid #ff5fa8; box-shadow: 0 0 10px rgba(255,95,168,0.5); }
+  body.startled #mouth { width: 10px; height: 10px; border-radius: 50%; background: #ffb266; box-shadow: 0 0 10px rgba(255,178,102,0.6); }
+  body.speaking #mouth { animation: talk 0.28s infinite ease-in-out; }
+  @keyframes talk { 0%,100%{ width: 30px; } 50%{ width: 16px; } }
+
+  #statusText { margin-top: 26px; font-size: 12.5px; color: #555; letter-spacing: 0.6px; z-index: 2; }
+
+  /* corações flutuantes */
+  .heart {
+    position: absolute; font-size: 16px; color: #ff5fa8; text-shadow: 0 0 8px rgba(255,95,168,0.7);
+    opacity: 0.95; pointer-events: none; z-index: 4; animation: floatUp 1.6s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0.7); opacity: 0.95; }
+    100% { transform: translateY(-90px) scale(1.1); opacity: 0; }
+  }
+
+  /* ---------- Cores por estado ---------- */
+  body {
+    --eyeCore: #7ff5ff; --eyeA: #00d9f0; --eyeB: #00a8c0;
+    --eyeGlow: rgba(0,229,255,0.75); --eyeGlow2: rgba(0,229,255,0.35); --eyeGlow3: rgba(0,229,255,0.15);
+    --glowColor: rgba(0,229,255,0.10); --mouthColor: #133a42; --mouthGlow: rgba(0,229,255,0.2);
+  }
+  body.listening {
+    --eyeCore: #fff2b0; --eyeA: #ffcc33; --eyeB: #c98f00;
+    --eyeGlow: rgba(255,204,51,0.75); --eyeGlow2: rgba(255,204,51,0.35); --eyeGlow3: rgba(255,204,51,0.15);
+    --glowColor: rgba(255,204,51,0.12);
+  }
+  body.thinking {
+    --eyeCore: #d6b3ff; --eyeA: #b266ff; --eyeB: #7a2fd9;
+    --eyeGlow: rgba(178,102,255,0.75); --eyeGlow2: rgba(178,102,255,0.35); --eyeGlow3: rgba(178,102,255,0.15);
+    --glowColor: rgba(178,102,255,0.13);
+  }
+  body.speaking {
+    --eyeCore: #b3ffe8; --eyeA: #33e6c2; --eyeB: #00a884;
+    --eyeGlow: rgba(51,230,194,0.75); --eyeGlow2: rgba(51,230,194,0.35); --eyeGlow3: rgba(51,230,194,0.15);
+    --glowColor: rgba(51,230,194,0.13); --mouthColor: #33e6c2; --mouthGlow: rgba(51,230,194,0.5);
+  }
+  body.petted {
+    --eyeCore: #ffd6e8; --eyeA: #ff5fa8; --eyeB: #d92f7a;
+    --eyeGlow: rgba(255,95,168,0.8); --eyeGlow2: rgba(255,95,168,0.4); --eyeGlow3: rgba(255,95,168,0.18);
+    --glowColor: rgba(255,95,168,0.16);
+  }
+  body.startled {
+    --eyeCore: #ffffff; --eyeA: #ff6b4a; --eyeB: #d9331a;
+    --eyeGlow: rgba(255,107,74,0.85); --eyeGlow2: rgba(255,107,74,0.4); --eyeGlow3: rgba(255,107,74,0.2);
+    --glowColor: rgba(255,107,74,0.18);
+  }
+  body.startled #stage { animation: shake 0.35s ease-in-out; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  /* ---------- Transcript ---------- */
+  #transcript {
+    padding: 0 26px 6px; font-size: 13px; line-height: 1.5; color: #777;
+    min-height: 40px; max-height: 90px; overflow-y: auto; z-index: 2;
+  }
+  #transcript .user { color: #b266ff; }
+  #transcript .ai { color: #33e6c2; }
+  #transcript .err { color: #ff6b4a; }
+
+  /* ---------- Controls ---------- */
+  #controls { display: flex; justify-content: center; align-items: center; gap: 22px; padding: 14px 20px 34px; z-index: 2; }
+  #micBtn {
+    width: 84px; height: 84px; border-radius: 50%; border: none;
+    background: #00e5ff; color: #001014;
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
+    box-shadow: 0 0 24px rgba(0,229,255,0.5); transition: transform 0.15s;
+  }
+  #micBtn:active { transform: scale(0.92); }
+  #micBtn.recording { background: #ffcc33; box-shadow: 0 0 24px rgba(255,204,51,0.55); }
+  #micBtn:disabled { opacity: 0.3; }
+  .roundBtn { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #1a1a1a; background: #0a0a0a; font-size: 18px; color: #999; }
+  .roundBtn.wakeActive { border-color: #00e5ff; color: #00e5ff; box-shadow: 0 0 14px rgba(0,229,255,0.4); }
+
+  video#video { display: none; }
+</style>
+</head>
+<body>
+
+<div id="setupPanel">
+  <h1>◉ ◉ robozinho</h1>
+  <div class="sub">configuração rápida... só uma vez, prometo</div>
+  <label>Chave da API Gemini (gratuita)</label>
+  <input type="password" id="apiKey" placeholder="Cole aqui a chave (AIza...)">
+  <div class="hint">
+    Pegue grátis em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> — sem cartão, 2 minutos. Fica salva só neste navegador.
+  </div>
+  <button id="saveKeyBtn">salvar e começar</button>
+  <div class="compatNote" id="compatNote"></div>
+</div>
+
+<div id="stage">
+  <div id="glow"></div>
+  <div id="face">
+    <div class="eye" id="eyeL"></div>
+    <div class="eye" id="eyeR"></div>
+  </div>
+  <div id="mouth"></div>
+  <div id="statusText">toque no microfone pra falar comigo</div>
+</div>
+
+<div id="transcript"></div>
+
+<div id="controls">
+  <button id="switchCamBtn" class="roundBtn">🔄</button>
+  <button id="wakeBtn" class="roundBtn" title="Escutar sempre por 'Bite'">👂</button>
+  <button id="micBtn">🎙️</button>
+  <button id="changeKeyBtn" class="roundBtn">🔑</button>
+</div>
+
+<video id="video" autoplay playsinline muted></video>
+
+<script>
+const video = document.getElementById('video');
+const micBtn = document.getElementById('micBtn');
+const switchCamBtn = document.getElementById('switchCamBtn');
+const changeKeyBtn = document.getElementById('changeKeyBtn');
+const statusText = document.getElementById('statusText');
+const transcript = document.getElementById('transcript');
+const apiKeyInput = document.getElementById('apiKey');
+const saveKeyBtn = document.getElementById('saveKeyBtn');
+const setupPanel = document.getElementById('setupPanel');
+const compatNote = document.getElementById('compatNote');
+const stage = document.getElementById('stage');
+const wakeBtn = document.getElementById('wakeBtn');
+
+let stream = null;
+let recognizing = false;
+let recognition = null;
+let facingMode = 'environment';
+let apiKey = '';
+let currentMood = '';
+let moodTimer = null;
+
+// ---- Wake word ("Bite") ----
+const WAKE_WORDS = ['bite', 'byte', 'vite', 'baite'];
+let wakeRecognition = null;
+let wakeActive = false;
+let awaitingCommand = false;
+let awaitingTimer = null;
+
+const hasSpeechSynthesis = typeof window.speechSynthesis !== 'undefined';
+const hasSpeechRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+(function showCompatWarnings() {
+  const problems = [];
+  if (!hasSpeechRecognition) problems.push('reconhecimento de voz');
+  if (!hasSpeechSynthesis) problems.push('fala (texto-pra-voz)');
+  if (!hasGetUserMedia) problems.push('câmera');
+  if (problems.length) {
+    compatNote.textContent = `⚠️ Este navegador/visualizador não suporta: ${problems.join(', ')}. Abra o arquivo direto no Chrome (fora do app) pra funcionar completo.`;
+  }
+})();
+
+function loadSavedKey() {
+  const saved = localStorage.getItem('gemini_api_key');
+  if (saved) { apiKey = saved; setupPanel.classList.add('hidden'); initCamera(); }
+}
+saveKeyBtn.addEventListener('click', () => {
+  const val = apiKeyInput.value.trim();
+  if (!val) return;
+  apiKey = val;
+  localStorage.setItem('gemini_api_key', val);
+  setupPanel.classList.add('hidden');
+  initCamera();
+});
+changeKeyBtn.addEventListener('click', () => {
+  setupPanel.classList.remove('hidden');
+  apiKeyInput.value = apiKey;
+});
+loadSavedKey();
+
+async function initCamera() {
+  if (!hasGetUserMedia) { addLine('err', '⚠️ Câmera indisponível neste navegador.'); return; }
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false });
+    video.srcObject = stream;
+  } catch (e) {
+    addLine('err', '⚠️ Sem acesso à câmera: ' + e.message);
+  }
+}
+switchCamBtn.addEventListener('click', () => {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  initCamera();
+});
+function captureFrame() {
+  if (!stream) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+}
+function addLine(cls, text) {
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = text;
+  transcript.appendChild(d);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function applyBodyClass(cls) {
+  document.body.classList.remove('listening', 'thinking', 'speaking', 'petted', 'startled');
+  if (cls) document.body.classList.add(cls);
+}
+function setMood(state, text) {
+  currentMood = state;
+  clearTimeout(moodTimer);
+  applyBodyClass(state);
+  statusText.textContent = text;
+}
+function clearMoodIfMatches(expected, fallbackText) {
+  if (currentMood === expected) { currentMood = ''; applyBodyClass(''); statusText.textContent = fallbackText; }
+}
+function triggerReaction(state, text, durationMs) {
+  if (currentMood === 'listening' || currentMood === 'thinking' || currentMood === 'speaking') return;
+  applyBodyClass(state);
+  statusText.textContent = text;
+  clearTimeout(moodTimer);
+  moodTimer = setTimeout(() => {
+    if (currentMood === '') { applyBodyClass(''); statusText.textContent = 'toque no microfone pra falar comigo'; }
+  }, durationMs);
+}
+
+const eyeL = document.getElementById('eyeL');
+const eyeR = document.getElementById('eyeR');
+function blinkLoop() {
+  const delay = 2600 + Math.random() * 3200;
+  setTimeout(() => {
+    if (currentMood !== 'thinking' && !document.body.classList.contains('petted') && !document.body.classList.contains('startled')) {
+      eyeL.classList.add('blink'); eyeR.classList.add('blink');
+      setTimeout(() => { eyeL.classList.remove('blink'); eyeR.classList.remove('blink'); }, 140);
+    }
+    blinkLoop();
+  }, delay);
+}
+blinkLoop();
+
+let touchPath = [];
+let heartInterval = null;
+stage.addEventListener('touchstart', (e) => {
+  touchPath = [{ x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() }];
+});
+stage.addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  const last = touchPath[touchPath.length - 1];
+  const dist = Math.hypot(t.clientX - last.x, t.clientY - last.y);
+  touchPath.push({ x: t.clientX, y: t.clientY, t: Date.now() });
+  if (touchPath.length > 20) touchPath.shift();
+  const recentSpan = Date.now() - touchPath[0].t;
+  if (touchPath.length >= 5 && recentSpan > 350 && dist > 2) startPetted();
+});
+stage.addEventListener('touchend', () => { touchPath = []; stopPettedSoon(); });
+
+function startPetted() {
+  if (currentMood === 'listening' || currentMood === 'thinking' || currentMood === 'speaking') return;
+  applyBodyClass('petted');
+  statusText.textContent = 'ah... isso é bom, continua';
+  clearTimeout(moodTimer);
+  if (!heartInterval) heartInterval = setInterval(spawnHeart, 380);
+}
+function stopPettedSoon() {
+  clearInterval(heartInterval);
+  heartInterval = null;
+  moodTimer = setTimeout(() => {
+    if (currentMood === '' && document.body.classList.contains('petted')) {
+      applyBodyClass('');
+      statusText.textContent = 'toque no microfone pra falar comigo';
+    }
+  }, 900);
+}
+function spawnHeart() {
+  const h = document.createElement('div');
+  h.className = 'heart';
+  h.textContent = '♥';
+  h.style.left = (150 + Math.random() * 60) + 'px';
+  h.style.top = (Math.random() * 20) + 'px';
+  document.getElementById('face').appendChild(h);
+  setTimeout(() => h.remove(), 1700);
+}
+
+let lastAccel = null;
+function handleMotion(event) {
+  const acc = event.accelerationIncludingGravity || event.acceleration;
+  if (!acc) return;
+  if (lastAccel) {
+    const delta = Math.abs(acc.x - lastAccel.x) + Math.abs(acc.y - lastAccel.y) + Math.abs(acc.z - lastAccel.z);
+    if (delta > 22) triggerReaction('startled', 'ei! calma aí...', 1300);
+  }
+  lastAccel = { x: acc.x, y: acc.y, z: acc.z };
+}
+function handleOrientation(event) {
+  const gamma = event.gamma || 0;
+  const clamped = Math.max(-25, Math.min(25, gamma));
+  const offset = (clamped / 25) * 10;
+  document.documentElement.style.setProperty('--tiltX', offset.toFixed(1) + 'px');
+}
+function enableSensors() {
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission().then(state => { if (state === 'granted') window.addEventListener('devicemotion', handleMotion); }).catch(() => {});
+  } else if (typeof DeviceMotionEvent !== 'undefined') {
+    window.addEventListener('devicemotion', handleMotion);
+  }
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(state => { if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation); }).catch(() => {});
+  } else if (typeof DeviceOrientationEvent !== 'undefined') {
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+}
+document.body.addEventListener('touchstart', enableSensors, { once: true });
+document.body.addEventListener('click', enableSensors, { once: true });
+
+function initRecognition() {
+  if (!hasSpeechRecognition) { micBtn.disabled = true; return null; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const r = new SR();
+  r.lang = 'pt-BR'; r.continuous = false; r.interimResults = false;
+  r.onstart = () => { recognizing = true; micBtn.classList.add('recording'); setMood('listening', 'tô ouvindo...'); };
+  r.onresult = async (event) => {
+    const said = event.results[0][0].transcript;
+    addLine('user', 'Você: ' + said);
+    await askAI(said);
+  };
+  r.onerror = (e) => { currentMood = ''; applyBodyClass(''); statusText.textContent = 'deu erro: ' + e.error; };
+  r.onend = () => {
+    recognizing = false;
+    micBtn.classList.remove('recording');
+    clearMoodIfMatches('listening', 'toque no microfone pra falar comigo');
+  };
+  return r;
+}
+recognition = initRecognition();
+
+micBtn.addEventListener('click', () => {
+  if (!recognition) { addLine('err', '⚠️ Reconhecimento de voz indisponível aqui. Abre no Chrome.'); return; }
+  // se o modo "sempre ouvindo" tiver ligado, pausa ele enquanto o botão manual usa o microfone
+  if (wakeActive) stopWakeListening(true);
+  if (recognizing) recognition.stop(); else recognition.start();
+});
+
+// ---- Modo "sempre ouvindo" pelo nome "Bite" ----
+function findWakeWord(text) {
+  const lower = text.toLowerCase();
+  for (const w of WAKE_WORDS) {
+    const idx = lower.indexOf(w);
+    if (idx !== -1) return { word: w, idx, rest: text.slice(idx + w.length).replace(/^[,.\s]+/, '').trim() };
+  }
+  return null;
+}
+
+function startWakeListening(silent) {
+  if (!hasSpeechRecognition) { addLine('err', '⚠️ Reconhecimento de voz indisponível aqui.'); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  wakeRecognition = new SR();
+  wakeRecognition.lang = 'pt-BR';
+  wakeRecognition.continuous = true;
+  wakeRecognition.interimResults = true;
+
+  wakeRecognition.onresult = (event) => {
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      const transcript = result[0].transcript;
+
+      if (awaitingCommand && result.isFinal) {
+        clearTimeout(awaitingTimer);
+        awaitingCommand = false;
+        addLine('user', 'Você: ' + transcript);
+        askAI(transcript);
+        continue;
+      }
+
+      const hit = findWakeWord(transcript);
+      if (hit) {
+        if (hit.rest.length > 2) {
+          addLine('user', 'Você: ' + hit.rest);
+          askAI(hit.rest);
+        } else {
+          awaitingCommand = true;
+          triggerReaction('listening', 'oi! manda...', 4000);
+          clearTimeout(awaitingTimer);
+          awaitingTimer = setTimeout(() => { awaitingCommand = false; }, 6000);
+        }
+      }
+    }
+  };
+
+  wakeRecognition.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      addLine('err', '⚠️ Permissão de microfone negada pro modo contínuo.');
+      wakeActive = false;
+      wakeBtn.classList.remove('wakeActive');
+    }
+    // outros erros (ex: no-speech) são ignorados, o onend cuida de reiniciar
+  };
+
+  wakeRecognition.onend = () => {
+    if (wakeActive) {
+      setTimeout(() => { try { wakeRecognition.start(); } catch (e) {} }, 300);
+    }
+  };
+
+  try {
+    wakeRecognition.start();
+    wakeActive = true;
+    wakeBtn.classList.add('wakeActive');
+    if (!silent) addLine('ai', 'Robô: tô de ouvido em pé, só chamar "Bite".');
+  } catch (e) {
+    addLine('err', '⚠️ Não consegui ativar a escuta contínua: ' + e.message);
+  }
+}
+
+function stopWakeListening(silent) {
+  wakeActive = false;
+  awaitingCommand = false;
+  wakeBtn.classList.remove('wakeActive');
+  if (wakeRecognition) { try { wakeRecognition.stop(); } catch (e) {} }
+  if (!silent) statusText.textContent = 'toque no microfone pra falar comigo';
+}
+
+wakeBtn.addEventListener('click', () => {
+  if (wakeActive) stopWakeListening();
+  else startWakeListening();
+});
+
+async function askAI(userText) {
+  if (!apiKey) { addLine('err', '⚠️ Configure a chave (🔑) primeiro.'); return; }
+  setMood('thinking', 'pensando...');
+  const imageBase64 = captureFrame();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const parts = [];
+  if (imageBase64) parts.push({ inline_data: { mime_type: 'image/jpeg', data: imageBase64 } });
+  parts.push({ text: userText });
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: 'Você é um robozinho companion carismático, tipo o EMO da Living.AI — caloroso, brincalhão, curioso, com pequenas reações emocionais. Responda curto (2-3 frases), natural, em português do Brasil, tom de conversa falada. Se tiver imagem de câmera, comente o que vê quando fizer sentido.' }]
+        },
+        contents: [{ role: 'user', parts }]
+      })
+    });
+    const data = await response.json();
+    if (data.error) {
+      addLine('err', '⚠️ Erro da API: ' + data.error.message);
+      clearMoodIfMatches('thinking', 'toque no microfone pra falar comigo');
+      return;
+    }
+    const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text).join(' ') || '(sem resposta)';
+    addLine('ai', 'Robô: ' + reply);
+    speak(reply);
+  } catch (e) {
+    addLine('err', '⚠️ Falha na chamada: ' + e.message);
+    clearMoodIfMatches('thinking', 'toque no microfone pra falar comigo');
+  }
+}
+
+function speak(text) {
+  if (!hasSpeechSynthesis) { clearMoodIfMatches('thinking', 'toque no microfone pra falar comigo'); return; }
+  setMood('speaking', 'falando...');
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'pt-BR'; utter.rate = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const ptVoice = voices.find(v => v.lang === 'pt-BR') || voices.find(v => v.lang.startsWith('pt'));
+  if (ptVoice) utter.voice = ptVoice;
+  utter.onend = () => clearMoodIfMatches('speaking', 'toque no microfone pra falar comigo');
+  speechSynthesis.speak(utter);
+}
+if (hasSpeechSynthesis) { speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
+</script>
+
+</body>
+</html>

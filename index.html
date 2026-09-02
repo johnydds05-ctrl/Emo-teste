@@ -542,7 +542,7 @@ async function askAI(userText) {
   if (!apiKey) { addLine('err', '⚠️ Configure a chave (🔑) primeiro.'); return; }
   setMood('thinking', 'pensando...');
   const imageBase64 = captureFrame();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
   const parts = [];
   if (imageBase64) parts.push({ inline_data: { mime_type: 'image/jpeg', data: imageBase64 } });
   parts.push({ text: userText });

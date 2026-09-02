@@ -189,6 +189,12 @@
     Pegue grátis em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> — sem cartão, 2 minutos. Fica salva só neste navegador.
   </div>
   <button id="saveKeyBtn">salvar e começar</button>
+  <div id="voiceRow" style="margin-top:16px;">
+    <label>Voz (escolhe a que soar melhor)</label>
+    <select id="voiceSelect" style="width:100%; padding:12px; border-radius:10px; border:1px solid #1a1a1a; background:#0a0a0a; color:#ccc; font-size:14px;">
+      <option value="">carregando vozes...</option>
+    </select>
+  </div>
   <div class="compatNote" id="compatNote"></div>
 </div>
 
@@ -226,11 +232,12 @@ const setupPanel = document.getElementById('setupPanel');
 const compatNote = document.getElementById('compatNote');
 const stage = document.getElementById('stage');
 const wakeBtn = document.getElementById('wakeBtn');
+const voiceSelect = document.getElementById('voiceSelect');
 
 let stream = null;
 let recognizing = false;
 let recognition = null;
-let facingMode = 'environment';
+let facingMode = 'user';
 let apiKey = '';
 let currentMood = '';
 let moodTimer = null;
@@ -542,7 +549,7 @@ async function askAI(userText) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: {
-          parts: [{ text: 'Você é um robozinho companion carismático, tipo o EMO da Living.AI — caloroso, brincalhão, curioso, com pequenas reações emocionais. Responda curto (2-3 frases), natural, em português do Brasil, tom de conversa falada. Se tiver imagem de câmera, comente o que vê quando fizer sentido.' }]
+          parts: [{ text: 'Você é um robozinho companion com humor satírico e sem noção — solta piadas, faz comentários debochados e observações fora de hora, tipo aquele amigo engraçado que não tem filtro mas nunca é cruel de verdade. Zoa a situação, exagera pra fazer graça, usa ironia. Nunca ofende de forma pesada, não fala de temas sensíveis (violência, preconceito, etc) de forma jocosa. Responda curto (2-3 frases), em português do Brasil, tom de conversa falada e engraçada. Se tiver imagem de câmera, comenta o que vê com humor.' }]
         },
         contents: [{ role: 'user', parts }]
       })
@@ -568,12 +575,39 @@ function speak(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'pt-BR'; utter.rate = 1.0;
   const voices = speechSynthesis.getVoices();
-  const ptVoice = voices.find(v => v.lang === 'pt-BR') || voices.find(v => v.lang.startsWith('pt'));
-  if (ptVoice) utter.voice = ptVoice;
+  const savedVoiceName = localStorage.getItem('gemini_tts_voice');
+  let chosenVoice = null;
+  if (savedVoiceName) chosenVoice = voices.find(v => v.name === savedVoiceName);
+  if (!chosenVoice) chosenVoice = voices.find(v => v.lang === 'pt-BR') || voices.find(v => v.lang.startsWith('pt'));
+  if (chosenVoice) utter.voice = chosenVoice;
   utter.onend = () => clearMoodIfMatches('speaking', 'toque no microfone pra falar comigo');
   speechSynthesis.speak(utter);
 }
-if (hasSpeechSynthesis) { speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
+function populateVoiceList() {
+  const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('pt'));
+  if (!voices.length) return;
+  const savedVoiceName = localStorage.getItem('gemini_tts_voice');
+  voiceSelect.innerHTML = '';
+  voices.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = v.name + ' (' + v.lang + ')';
+    if (v.name === savedVoiceName) opt.selected = true;
+    voiceSelect.appendChild(opt);
+  });
+}
+voiceSelect.addEventListener('change', () => {
+  localStorage.setItem('gemini_tts_voice', voiceSelect.value);
+  const utter = new SpeechSynthesisUtterance('oi, essa sou eu');
+  utter.lang = 'pt-BR';
+  const v = speechSynthesis.getVoices().find(x => x.name === voiceSelect.value);
+  if (v) utter.voice = v;
+  speechSynthesis.speak(utter);
+});
+if (hasSpeechSynthesis) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+  populateVoiceList();
+}
 </script>
 
 </body>

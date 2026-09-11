@@ -84,6 +84,14 @@
   }
   #tools button{flex:1;padding:15px 10px;font-size:15px;background:rgba(15,21,28,.82);color:var(--fg);border:1px solid var(--line)}
   #tools button.primary{background:var(--signal);color:#241703;border-color:var(--signal)}
+  #tools button#torch{flex:0 0 58px;padding:15px 6px}
+  #tools button#torch.on{background:var(--signal);color:#241703;border-color:var(--signal)}
+  #toast{
+    position:absolute;left:14px;right:14px;
+    bottom:calc(max(18px,env(safe-area-inset-bottom)) + 64px);
+    background:rgba(15,21,28,.92);border:1px solid var(--line);border-left:2px solid var(--alert);
+    padding:11px 13px;font-size:13px;line-height:1.45;color:var(--fg);
+  }
   #crosshair{
     position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;
     border:1px solid rgba(228,233,237,.55);border-radius:50%;
@@ -123,7 +131,9 @@
   </div>
   <canvas id="minimap" width="264" height="264"></canvas>
   <div id="crosshair"></div>
+  <div id="toast" hidden></div>
   <div id="tools">
+    <button id="torch" aria-pressed="false">Luz</button>
     <button id="clear">Limpar</button>
     <button id="save" class="primary">Salvar .ply</button>
     <button id="stop">Encerrar</button>
@@ -331,6 +341,7 @@ startBtn.addEventListener('click', async () => {
   renderer.setAnimationLoop(onFrame);
 
   session.addEventListener('end', () => {
+    releaseTorch();
     renderer.setAnimationLoop(null);
     hud.classList.remove('on');
     launch.style.display = 'flex';
@@ -343,6 +354,53 @@ startBtn.addEventListener('click', async () => {
 });
 
 el('stop').addEventListener('click', () => session && session.end());
+
+// ---------- lanterna ----------
+let toastTimer;
+function toast(msg) {
+  const t = el('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 6000);
+}
+
+let torchTrack = null, torchOn = false;
+const torchBtn = el('torch');
+
+async function openTorch() {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  const track = stream.getVideoTracks()[0];
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  if (!caps.torch) { track.stop(); throw new Error('sem controle de lanterna neste aparelho'); }
+  torchTrack = track;
+}
+
+torchBtn.addEventListener('click', async () => {
+  try {
+    if (!torchTrack) await openTorch();
+    torchOn = !torchOn;
+    await torchTrack.applyConstraints({ advanced: [{ torch: torchOn }] });
+    torchBtn.classList.toggle('on', torchOn);
+    torchBtn.setAttribute('aria-pressed', String(torchOn));
+    if (torchOn) toast('Lanterna ligada. Se o rastreamento começar a patinar, desligue — luz presa na câmera atrapalha a profundidade.');
+  } catch (e) {
+    torchOn = false;
+    torchBtn.classList.remove('on');
+    torchBtn.setAttribute('aria-pressed', 'false');
+    toast('A câmera está reservada pelo ARCore. Ligue a lanterna pela barra de notificações, sem sair daqui.');
+  }
+});
+
+function releaseTorch() {
+  if (!torchTrack) return;
+  try { torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch (e) {}
+  torchTrack.stop();
+  torchTrack = null;
+  torchOn = false;
+  torchBtn.classList.remove('on');
+  torchBtn.setAttribute('aria-pressed', 'false');
+}
 
 el('clear').addEventListener('click', () => {
   count = 0; voxels.clear();

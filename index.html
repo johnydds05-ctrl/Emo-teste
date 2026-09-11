@@ -115,6 +115,7 @@
     <div class="spec"><dt>Alcance útil</dt><dd class="num">0,4 – 8 m</dd></div>
     <div class="spec"><dt>Grade de amostragem</dt><dd class="num">72 × 54 por quadro</dd></div>
     <div class="spec"><dt>Teto da nuvem</dt><dd class="num">160 000 pontos</dd></div>
+    <div class="spec"><dt>Build</dt><dd class="num">v4 — lanterna + estado</dd></div>
   </dl>
 
   <div>
@@ -125,6 +126,7 @@
 
 <div id="hud">
   <div id="readouts">
+    <div class="chip">estado <b id="r-status">iniciando</b></div>
     <div class="chip">pontos <b id="r-count">0</b></div>
     <div class="chip">centro <b id="r-center">—</b><span class="unit">m</span></div>
     <div class="chip">quadro <b id="r-fps">0</b><span class="unit">fps</span></div>
@@ -223,7 +225,7 @@ const world = new THREE.Vector3();
 
 function harvest(frame, view) {
   const depthInfo = frame.getDepthInformation(view);
-  if (!depthInfo) return;
+  if (!depthInfo) return false;
 
   const toDepth = new DOMMatrix(Array.from(depthInfo.normDepthBufferFromNormView.matrix));
   invProj.fromArray(view.projectionMatrix).invert();
@@ -250,6 +252,7 @@ function harvest(frame, view) {
       addPoint(world.x, world.y, world.z);
     }
   }
+  return true;
 }
 
 // ---------- radar de topo ----------
@@ -290,23 +293,36 @@ function drawMap(pose) {
 // ---------- laço ----------
 function onFrame(t, frame) {
   if (!frame) return;
-  const pose = frame.getViewerPose(refSpace);
-  if (pose) {
-    for (const view of pose.views) harvest(frame, view);
+  frames++;
+
+  const pose = refSpace ? frame.getViewerPose(refSpace) : null;
+  let status;
+
+  if (!pose) {
+    status = 'sem rastreamento';
+  } else {
+    let gotDepth = false;
+    for (const view of pose.views) {
+      if (harvest(frame, view)) gotDepth = true;
+    }
+    status = gotDepth ? (centerDepth ? 'medindo' : 'fora de alcance') : 'sem profundidade';
 
     points.geometry.setDrawRange(0, count);
     points.geometry.attributes.position.needsUpdate = true;
     points.geometry.attributes.color.needsUpdate = true;
-
-    frames++;
-    if (t - lastFpsAt > 500) {
-      el('r-fps').textContent = Math.round(frames * 1000 / (t - lastFpsAt));
-      el('r-count').textContent = count.toLocaleString('pt-BR');
-      el('r-center').textContent = centerDepth ? centerDepth.toFixed(2) : '—';
-      frames = 0; lastFpsAt = t;
-      drawMap(pose);
-    }
   }
+
+  if (t - lastFpsAt > 500) {
+    el('r-fps').textContent = Math.round(frames * 1000 / (t - lastFpsAt));
+    el('r-count').textContent = count.toLocaleString('pt-BR');
+    el('r-center').textContent = centerDepth ? centerDepth.toFixed(2) : '—';
+    const s = el('r-status');
+    s.textContent = status;
+    s.style.color = status === 'medindo' ? 'var(--depth)' : 'var(--alert)';
+    frames = 0; lastFpsAt = t;
+    if (pose) drawMap(pose);
+  }
+
   renderer.render(scene, camera);
 }
 
@@ -344,6 +360,9 @@ startBtn.addEventListener('click', async () => {
   renderer.xr.setReferenceSpaceType('local-floor');
   await renderer.xr.setSession(session);
   refSpace = renderer.xr.getReferenceSpace();
+  if (!refSpace) {
+    try { refSpace = await session.requestReferenceSpace('local'); } catch (e) {}
+  }
 
   renderer.setAnimationLoop(onFrame);
 

@@ -115,7 +115,7 @@
     <div class="spec"><dt>Alcance útil</dt><dd class="num">0,4 – 8 m</dd></div>
     <div class="spec"><dt>Grade de amostragem</dt><dd class="num">72 × 54 por quadro</dd></div>
     <div class="spec"><dt>Teto da nuvem</dt><dd class="num">160 000 pontos</dd></div>
-    <div class="spec"><dt>Build</dt><dd class="num">v4 — lanterna + estado</dd></div>
+    <div class="spec"><dt>Build</dt><dd class="num">v5 — lanterna multi-câmera</dd></div>
   </dl>
 
   <div>
@@ -300,7 +300,11 @@ function onFrame(t, frame) {
 
   if (!pose) {
     status = 'sem rastreamento';
+    if (torchOn && torchGuardAt && t - torchGuardAt > 3000) {
+      torchOff('A lanterna derrubou o rastreamento. Desliguei — a câmera deve voltar em alguns segundos.');
+    }
   } else {
+    if (torchOn) torchGuardAt = t;
     let gotDepth = false;
     for (const view of pose.views) {
       if (harvest(frame, view)) gotDepth = true;
@@ -395,42 +399,66 @@ function toast(msg) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 6000);
 }
 
-let torchTrack = null, torchOn = false;
+let torchTrack = null, torchOn = false, torchGuardAt = 0;
 const torchBtn = el('torch');
 
+// O ARCore segura a câmera principal. Tentamos as outras primeiro —
+// o LED é compartilhado, então acender por outro deviceId pode não gerar conflito.
 async function openTorch() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  const track = stream.getVideoTracks()[0];
-  const caps = track.getCapabilities ? track.getCapabilities() : {};
-  if (!caps.torch) { track.stop(); throw new Error('sem controle de lanterna neste aparelho'); }
-  torchTrack = track;
+  let ids = [];
+  try {
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    ids = devs.filter(d => d.kind === 'videoinput').map(d => d.deviceId).reverse();
+  } catch (e) {}
+  ids.push(null);
+
+  for (const id of ids) {
+    const c = { video: { width: { ideal: 160 }, height: { ideal: 120 }, frameRate: { ideal: 2 } } };
+    if (id) c.video.deviceId = { exact: id };
+    else c.video.facingMode = { ideal: 'environment' };
+
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia(c); } catch (e) { continue; }
+
+    const track = stream.getVideoTracks()[0];
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (!caps.torch) { track.stop(); continue; }
+
+    torchTrack = track;
+    return;
+  }
+  throw new Error('nenhuma câmera livre com lanterna');
+}
+
+function torchOff(msg) {
+  if (torchTrack) {
+    try { torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch (e) {}
+    torchTrack.stop();
+    torchTrack = null;
+  }
+  torchOn = false;
+  torchGuardAt = 0;
+  torchBtn.classList.remove('on');
+  torchBtn.setAttribute('aria-pressed', 'false');
+  if (msg) toast(msg);
 }
 
 torchBtn.addEventListener('click', async () => {
+  if (torchOn) { torchOff(); return; }
   try {
     if (!torchTrack) await openTorch();
-    torchOn = !torchOn;
-    await torchTrack.applyConstraints({ advanced: [{ torch: torchOn }] });
-    torchBtn.classList.toggle('on', torchOn);
-    torchBtn.setAttribute('aria-pressed', String(torchOn));
-    if (torchOn) toast('Lanterna ligada. Se o rastreamento começar a patinar, desligue — luz presa na câmera atrapalha a profundidade.');
+    await torchTrack.applyConstraints({ advanced: [{ torch: true }] });
+    torchOn = true;
+    torchGuardAt = performance.now();
+    torchBtn.classList.add('on');
+    torchBtn.setAttribute('aria-pressed', 'true');
+    toast('Lanterna ligada. Se o rastreamento cair, desligo sozinho em 3 s.');
   } catch (e) {
-    torchOn = false;
-    torchBtn.classList.remove('on');
-    torchBtn.setAttribute('aria-pressed', 'false');
-    toast('A câmera está reservada pelo ARCore. Ligue a lanterna pela barra de notificações, sem sair daqui.');
+    torchOff('A câmera está reservada pelo ARCore e não há outra livre. Use a lanterna da barra de notificações ou uma luminária fixa.');
   }
 });
 
-function releaseTorch() {
-  if (!torchTrack) return;
-  try { torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch (e) {}
-  torchTrack.stop();
-  torchTrack = null;
-  torchOn = false;
-  torchBtn.classList.remove('on');
-  torchBtn.setAttribute('aria-pressed', 'false');
-}
+function releaseTorch() { torchOff(); }
 
 el('clear').addEventListener('click', () => {
   count = 0; voxels.clear();

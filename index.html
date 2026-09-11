@@ -9,119 +9,102 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0F151C;
-    --ink-2:#18212B;
-    --line:#2A3844;
-    --fg:#E4E9ED;
-    --fg-dim:#8D9BA8;
-    --signal:#E8A33D;
-    --depth:#5BC8CF;
-    --alert:#D9614C;
+    --ink:#0F151C; --ink-2:#18212B; --line:#2A3844;
+    --fg:#E4E9ED; --fg-dim:#8D9BA8;
+    --signal:#E8A33D; --depth:#5BC8CF; --alert:#D9614C;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{
-    background:var(--ink);
-    color:var(--fg);
-    font-family:"IBM Plex Sans",system-ui,sans-serif;
-    -webkit-font-smoothing:antialiased;
-    overflow:hidden;
-  }
+  body{background:var(--ink);color:var(--fg);font-family:"IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
   .num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
 
-  /* ---------- tela inicial ---------- */
-  #launch{
-    position:absolute;inset:0;
-    display:flex;flex-direction:column;justify-content:space-between;
-    padding:max(28px,env(safe-area-inset-top)) 24px max(28px,env(safe-area-inset-bottom));
+  #launch{position:absolute;inset:0;overflow-y:auto;
+    padding:max(26px,env(safe-area-inset-top)) 22px max(26px,env(safe-area-inset-bottom));
     background:
-      repeating-linear-gradient(0deg,transparent 0 39px,rgba(42,56,68,.35) 39px 40px),
-      repeating-linear-gradient(90deg,transparent 0 39px,rgba(42,56,68,.35) 39px 40px),
-      var(--ink);
-  }
-  #launch h1{
-    font-size:clamp(34px,11vw,52px);
-    font-weight:600;line-height:.95;letter-spacing:-.03em;
-    max-width:7ch;
-  }
-  #launch h1 span{display:block;color:var(--depth)}
-  .lede{margin-top:18px;max-width:34ch;color:var(--fg-dim);line-height:1.55;font-size:15px}
-  .specs{border-top:1px solid var(--line);margin-top:26px}
-  .spec{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+      repeating-linear-gradient(0deg,transparent 0 39px,rgba(42,56,68,.3) 39px 40px),
+      repeating-linear-gradient(90deg,transparent 0 39px,rgba(42,56,68,.3) 39px 40px),
+      var(--ink);}
+  h1{font-size:clamp(32px,10vw,48px);font-weight:600;line-height:.95;letter-spacing:-.03em;max-width:7ch}
+  h1 span{display:block;color:var(--depth)}
+  .lede{margin-top:16px;max-width:36ch;color:var(--fg-dim);line-height:1.55;font-size:15px}
+  .modes{margin-top:26px;display:flex;flex-direction:column;gap:10px}
+  .mode{display:block;width:100%;text-align:left;background:var(--ink-2);border:1px solid var(--line);
+    border-radius:2px;padding:15px 16px;color:var(--fg);font:400 15px/1.4 "IBM Plex Sans",sans-serif;cursor:pointer}
+  .mode strong{display:block;font-weight:500;font-size:17px;margin-bottom:3px}
+  .mode em{font-style:normal;color:var(--fg-dim);font-size:13.5px}
+  .mode:disabled{opacity:.45;cursor:not-allowed}
+  .mode:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+  .specs{margin-top:24px;border-top:1px solid var(--line)}
+  .spec{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
   .spec dt{color:var(--fg-dim)}
-  .spec dd{color:var(--fg)}
-  button{
-    font:500 17px/1 "IBM Plex Sans",sans-serif;
-    border:0;border-radius:2px;padding:18px 22px;width:100%;
-    background:var(--signal);color:#241703;cursor:pointer;
-  }
-  button:disabled{background:var(--ink-2);color:var(--fg-dim);cursor:not-allowed}
-  button:focus-visible{outline:2px solid var(--depth);outline-offset:3px}
   #diag{margin-top:14px;font-size:13.5px;line-height:1.5;color:var(--fg-dim);min-height:2.6em}
   #diag.bad{color:var(--alert)}
+  input[type=file]{display:none}
 
-  /* ---------- HUD dentro da sessão ---------- */
   #hud{position:absolute;inset:0;display:none;pointer-events:none}
   #hud.on{display:block}
-  #readouts{
-    position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;
-    display:flex;flex-direction:column;gap:5px;
-  }
-  .chip{
-    background:rgba(15,21,28,.72);border:1px solid var(--line);
-    padding:6px 9px;font-size:12px;color:var(--fg-dim);
-    display:flex;gap:8px;align-items:baseline;
-  }
+  #readouts{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;display:flex;flex-direction:column;gap:5px}
+  .chip{background:rgba(15,21,28,.75);border:1px solid var(--line);padding:6px 9px;font-size:12px;color:var(--fg-dim);display:flex;gap:8px;align-items:baseline}
   .chip b{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--fg);font-size:14px}
   .chip .unit{font-size:11px;color:var(--fg-dim)}
-  #minimap{
-    position:absolute;right:14px;top:max(14px,env(safe-area-inset-top));
-    width:132px;height:132px;border:1px solid var(--line);background:rgba(15,21,28,.72);
-  }
-  #tools{
-    position:absolute;left:14px;right:14px;bottom:max(18px,env(safe-area-inset-bottom));
-    display:flex;gap:8px;pointer-events:auto;
-  }
-  #tools button{flex:1;padding:15px 10px;font-size:15px;background:rgba(15,21,28,.82);color:var(--fg);border:1px solid var(--line)}
-  #tools button.primary{background:var(--signal);color:#241703;border-color:var(--signal)}
-  #tools button#torch{flex:0 0 58px;padding:15px 6px}
-  #tools button#torch.on{background:var(--signal);color:#241703;border-color:var(--signal)}
-  #toast{
-    position:absolute;left:14px;right:14px;
-    bottom:calc(max(18px,env(safe-area-inset-bottom)) + 64px);
-    background:rgba(15,21,28,.92);border:1px solid var(--line);border-left:2px solid var(--alert);
-    padding:11px 13px;font-size:13px;line-height:1.45;color:var(--fg);
-  }
-  #crosshair{
-    position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;
-    border:1px solid rgba(228,233,237,.55);border-radius:50%;
-  }
+  #big{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;right:12px;
+    background:rgba(15,21,28,.8);border:1px solid var(--line);padding:12px 14px;display:none}
+  #big.on{display:block}
+  #big .v{font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:500;letter-spacing:-.02em}
+  #big .k{font-size:12px;color:var(--fg-dim);margin-top:2px}
+  #big .sub{margin-top:8px;font-size:12.5px;color:var(--fg-dim);line-height:1.5}
+  #minimap{position:absolute;right:12px;top:max(12px,env(safe-area-inset-top));width:128px;height:128px;border:1px solid var(--line);background:rgba(15,21,28,.7);display:none}
+  #minimap.on{display:block}
+  #crosshair{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border:1px solid rgba(228,233,237,.5);border-radius:50%;display:none}
+  #crosshair.on{display:block}
   #crosshair::after{content:"";position:absolute;inset:11px;background:var(--signal);border-radius:50%}
-  @media (prefers-reduced-motion:no-preference){
-    #crosshair{transition:transform .18s ease}
-  }
+  #toast{position:absolute;left:12px;right:12px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 64px);
+    background:rgba(15,21,28,.92);border:1px solid var(--line);border-left:2px solid var(--alert);
+    padding:11px 13px;font-size:13px;line-height:1.45;color:var(--fg)}
+  #tools{position:absolute;left:12px;right:12px;bottom:max(16px,env(safe-area-inset-bottom));display:flex;gap:7px;pointer-events:auto}
+  #tools button{flex:1;padding:15px 8px;font:500 15px/1 "IBM Plex Sans",sans-serif;background:rgba(15,21,28,.85);color:var(--fg);border:1px solid var(--line);border-radius:2px;cursor:pointer}
+  #tools button.primary{background:var(--signal);color:#241703;border-color:var(--signal)}
+  #tools button.narrow{flex:0 0 56px;padding:15px 4px}
+  #tools button.on{background:var(--signal);color:#241703;border-color:var(--signal)}
+  #tools button[hidden]{display:none}
+
+  #viewer{position:absolute;inset:0;display:none;background:var(--ink)}
+  #viewer.on{display:block}
+  #vbar{position:absolute;left:12px;right:12px;bottom:max(16px,env(safe-area-inset-bottom));display:flex;gap:7px}
+  #vbar button{flex:1;padding:15px 8px;font:500 15px/1 "IBM Plex Sans",sans-serif;background:var(--ink-2);color:var(--fg);border:1px solid var(--line);border-radius:2px;cursor:pointer}
+  #vinfo{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;font-size:12.5px;color:var(--fg-dim);line-height:1.6}
+  #vinfo b{font-family:"IBM Plex Mono",monospace;color:var(--fg);font-weight:500}
 </style>
 </head>
 <body>
 
 <main id="launch">
-  <div>
-    <h1>Varredura<span>3D</span></h1>
-    <p class="lede">Gire devagar com o celular na mão. Cada quadro vira alguns milhares de pontos com distância medida em metros, acumulados em coordenadas do mundo.</p>
+  <h1>Varredura<span>3D</span></h1>
+  <p class="lede">Três ferramentas sobre o rastreamento do ARCore. Nenhuma precisa de sensor extra.</p>
+
+  <div class="modes">
+    <button class="mode" id="m-scan" disabled>
+      <strong>Varredura</strong>
+      <em>Nuvem de pontos com profundidade. Exige aparelho com depth.</em>
+    </button>
+    <button class="mode" id="m-measure" disabled>
+      <strong>Trena</strong>
+      <em>Mede distância, perímetro e área tocando na tela. Não usa depth.</em>
+    </button>
+    <button class="mode" id="m-view">
+      <strong>Visualizar nuvem</strong>
+      <em>Gira e amplia a última varredura, ou abre um .ply salvo.</em>
+    </button>
   </div>
 
   <dl class="specs">
-    <div class="spec"><dt>Fonte</dt><dd>WebXR Depth Sensing</dd></div>
-    <div class="spec"><dt>Alcance útil</dt><dd class="num">0,4 – 8 m</dd></div>
-    <div class="spec"><dt>Grade de amostragem</dt><dd class="num">72 × 54 por quadro</dd></div>
-    <div class="spec"><dt>Teto da nuvem</dt><dd class="num">160 000 pontos</dd></div>
-    <div class="spec"><dt>Build</dt><dd class="num">v5 — lanterna multi-câmera</dd></div>
+    <div class="spec"><dt>Alcance da varredura</dt><dd class="num">0,4 – 8 m</dd></div>
+    <div class="spec"><dt>Confirmação por voxel</dt><dd class="num">3 quadros</dd></div>
+    <div class="spec"><dt>Build</dt><dd class="num">v7 — trena + visualizador</dd></div>
   </dl>
 
-  <div>
-    <button id="start" disabled>Verificando aparelho</button>
-    <p id="diag">Aguarde.</p>
-  </div>
+  <p id="diag">Verificando aparelho.</p>
+  <input type="file" id="plyfile" accept=".ply,.txt">
 </main>
 
 <div id="hud">
@@ -131,54 +114,91 @@
     <div class="chip">centro <b id="r-center">—</b><span class="unit">m</span></div>
     <div class="chip">quadro <b id="r-fps">0</b><span class="unit">fps</span></div>
   </div>
-  <canvas id="minimap" width="264" height="264"></canvas>
+
+  <div id="big">
+    <div class="v" id="b-main">—</div>
+    <div class="k" id="b-key">toque para marcar o primeiro ponto</div>
+    <div class="sub" id="b-sub"></div>
+  </div>
+
+  <canvas id="minimap" width="256" height="256"></canvas>
   <div id="crosshair"></div>
   <div id="toast" hidden></div>
+
   <div id="tools">
-    <button id="torch" aria-pressed="false">Luz</button>
+    <button id="torch" class="narrow" aria-pressed="false">Luz</button>
+    <button id="undo" hidden>Desfazer</button>
+    <button id="close" hidden>Fechar área</button>
     <button id="clear">Limpar</button>
     <button id="save" class="primary">Salvar .ply</button>
     <button id="stop">Encerrar</button>
   </div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+<div id="viewer">
+  <div id="vinfo"></div>
+  <div id="vbar">
+    <button id="v-open">Abrir .ply</button>
+    <button id="v-reset">Enquadrar</button>
+    <button id="v-back">Voltar</button>
+  </div>
+</div>
 
-const MAX_POINTS = 160000;
-const VOXEL = 0.04;
-const GRID_X = 72, GRID_Y = 54;
-const D_MIN = 0.4, D_MAX = 8.0;
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const MAX_POINTS = 160000, VOXEL = 0.04, CONFIRM = 3;
+const GRID_X = 72, GRID_Y = 54, D_MIN = 0.4, D_MAX = 8.0;
 
 const el = id => document.getElementById(id);
-const launch = el('launch'), hud = el('hud'), diag = el('diag'), startBtn = el('start');
-
-if (!('xr' in navigator)) {
-  diag.textContent = 'Este navegador não tem WebXR. Use o Chrome no Android.';
-  diag.className = 'bad';
-  startBtn.textContent = 'Indisponível';
-} else {
-  navigator.xr.isSessionSupported('immersive-ar').then(ok => {
-    if (ok) {
-      startBtn.disabled = false;
-      startBtn.textContent = 'Iniciar varredura';
-      diag.textContent = 'Toque para permitir a câmera. Precisa de luz e textura na parede — parede branca lisa não gera profundidade.';
-    } else {
-      diag.textContent = 'Realidade aumentada indisponível. Instale ou atualize o Google Play Services for AR.';
-      diag.className = 'bad';
-      startBtn.textContent = 'Indisponível';
-    }
-  });
-}
+const launch = el('launch'), hud = el('hud'), diag = el('diag'), viewerEl = el('viewer');
 
 let renderer, scene, camera, points, positions, colors, count = 0;
-const voxels = new Set();
-let session = null, refSpace = null;
+const voxels = new Map();
+let frameId = 0;
+let session = null, refSpace = null, mode = null;
 let frames = 0, lastFpsAt = 0, centerDepth = 0;
+let hitSource = null, reticle = null;
+const marks = [];
+let markGroup = null, closed = false;
+let controls = null, viewCam = null;
 
+/* ---------------- capacidades ---------------- */
+let canDepth = false, canHit = false;
+
+async function probe() {
+  if (!('xr' in navigator)) {
+    diag.textContent = 'Sem WebXR. Use o Chrome no Android.';
+    diag.className = 'bad';
+    return;
+  }
+  let ok = false;
+  try { ok = await navigator.xr.isSessionSupported('immersive-ar'); } catch (e) {}
+  if (!ok) {
+    diag.textContent = 'Realidade aumentada indisponível. Instale ou atualize o Google Play Services for AR.';
+    diag.className = 'bad';
+    return;
+  }
+  canHit = true; canDepth = true;
+  el('m-scan').disabled = false;
+  el('m-measure').disabled = false;
+  diag.textContent = 'A trena funciona em qualquer aparelho com ARCore. A varredura exige suporte a profundidade — se não houver, o app avisa ao entrar.';
+}
+probe();
+
+/* ---------------- cena ---------------- */
 function buildScene() {
+  if (renderer) return;
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 40);
+  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 60);
 
   positions = new Float32Array(MAX_POINTS * 3);
   colors = new Float32Array(MAX_POINTS * 3);
@@ -190,6 +210,17 @@ function buildScene() {
   points.frustumCulled = false;
   scene.add(points);
 
+  markGroup = new THREE.Group();
+  scene.add(markGroup);
+
+  reticle = new THREE.Mesh(
+    new THREE.RingGeometry(0.045, 0.058, 40).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xE8A33D })
+  );
+  reticle.matrixAutoUpdate = false;
+  reticle.visible = false;
+  scene.add(reticle);
+
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(innerWidth, innerHeight);
@@ -198,19 +229,22 @@ function buildScene() {
   document.body.appendChild(renderer.domElement);
 }
 
-// azul-profundo embaixo, âmbar em cima — altura vira cor
 function heightColor(y, out) {
   const t = Math.max(0, Math.min(1, (y + 1.4) / 2.8));
-  out[0] = 0.36 + t * 0.55;
-  out[1] = 0.78 - t * 0.14;
-  out[2] = 0.81 - t * 0.57;
+  out[0] = 0.10 + t * 0.81; out[1] = 0.45 + t * 0.19; out[2] = 0.75 - t * 0.60;
 }
-
 const rgb = [0, 0, 0];
+
 function addPoint(x, y, z) {
-  const key = (Math.round(x / VOXEL)) + ',' + (Math.round(y / VOXEL)) + ',' + (Math.round(z / VOXEL));
-  if (voxels.has(key) || count >= MAX_POINTS) return;
-  voxels.add(key);
+  if (count >= MAX_POINTS) return;
+  const key = Math.round(x / VOXEL) + ',' + Math.round(y / VOXEL) + ',' + Math.round(z / VOXEL);
+  const v = voxels.get(key);
+  if (v === -1) return;
+  if (v === undefined) { if (voxels.size < 900000) voxels.set(key, 100000 + frameId); return; }
+  const hits = Math.floor(v / 100000);
+  if (v % 100000 === frameId) return;
+  if (hits + 1 < CONFIRM) { voxels.set(key, (hits + 1) * 100000 + frameId); return; }
+  voxels.set(key, -1);
   const i = count * 3;
   positions[i] = x; positions[i + 1] = y; positions[i + 2] = z;
   heightColor(y, rgb);
@@ -218,16 +252,14 @@ function addPoint(x, y, z) {
   count++;
 }
 
-const invProj = new THREE.Matrix4();
-const camMat = new THREE.Matrix4();
-const vec = new THREE.Vector4();
-const world = new THREE.Vector3();
+/* ---------------- profundidade ---------------- */
+const invProj = new THREE.Matrix4(), camMat = new THREE.Matrix4();
+const vec = new THREE.Vector4(), world = new THREE.Vector3();
 
 function harvest(frame, view) {
-  const depthInfo = frame.getDepthInformation(view);
-  if (!depthInfo) return false;
-
-  const toDepth = new DOMMatrix(Array.from(depthInfo.normDepthBufferFromNormView.matrix));
+  const di = frame.getDepthInformation ? frame.getDepthInformation(view) : null;
+  if (!di) return false;
+  const toDepth = new DOMMatrix(Array.from(di.normDepthBufferFromNormView.matrix));
   invProj.fromArray(view.projectionMatrix).invert();
   camMat.fromArray(view.transform.matrix);
 
@@ -235,16 +267,11 @@ function harvest(frame, view) {
     const v = (gy + 0.5) / GRID_Y;
     for (let gx = 0; gx < GRID_X; gx++) {
       const u = (gx + 0.5) / GRID_X;
-
       const p = new DOMPointReadOnly(u, v).matrixTransform(toDepth);
       if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) continue;
-
-      let d;
-      try { d = depthInfo.getDepthInMeters(p.x, p.y); } catch (e) { continue; }
+      let d; try { d = di.getDepthInMeters(p.x, p.y); } catch (e) { continue; }
       if (!(d > D_MIN) || d > D_MAX) continue;
-
       if (gx === (GRID_X >> 1) && gy === (GRID_Y >> 1)) centerDepth = d;
-
       vec.set(u * 2 - 1, 1 - v * 2, -1, 1).applyMatrix4(invProj);
       const ix = vec.x / vec.w, iy = vec.y / vec.w, iz = vec.z / vec.w;
       const k = d / -iz;
@@ -255,65 +282,117 @@ function harvest(frame, view) {
   return true;
 }
 
-// ---------- radar de topo ----------
-const map = el('minimap'), mctx = map.getContext('2d');
-const MAP_R = 7; // metros representados do centro à borda
+/* ---------------- trena ---------------- */
+const MARK_MAT = new THREE.MeshBasicMaterial({ color: 0x5BC8CF });
+const LINE_MAT = new THREE.LineBasicMaterial({ color: 0xE8A33D });
+const MARK_GEO = new THREE.SphereGeometry(0.012, 12, 8);
 
+function placeMark() {
+  if (!reticle.visible || closed) return;
+  const p = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+  marks.push(p);
+  const s = new THREE.Mesh(MARK_GEO, MARK_MAT);
+  s.position.copy(p);
+  markGroup.add(s);
+  rebuildLines();
+  updateMeasure();
+}
+
+function rebuildLines() {
+  for (let i = markGroup.children.length - 1; i >= 0; i--) {
+    const c = markGroup.children[i];
+    if (c.isLine) { c.geometry.dispose(); markGroup.remove(c); }
+  }
+  if (marks.length < 2) return;
+  const pts = closed ? marks.concat([marks[0]]) : marks;
+  markGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), LINE_MAT));
+}
+
+function polygonArea(pl) {
+  const n = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3();
+  for (let i = 0; i < pl.length; i++) {
+    a.copy(pl[i]); b.copy(pl[(i + 1) % pl.length]);
+    n.x += a.y * b.z - a.z * b.y;
+    n.y += a.z * b.x - a.x * b.z;
+    n.z += a.x * b.y - a.y * b.x;
+  }
+  return n.length() / 2;
+}
+
+function updateMeasure() {
+  const main = el('b-main'), key = el('b-key'), sub = el('b-sub');
+  if (!marks.length) { main.textContent = '—'; key.textContent = 'toque para marcar o primeiro ponto'; sub.textContent = ''; return; }
+  if (marks.length === 1) { main.textContent = '—'; key.textContent = 'marque o segundo ponto'; sub.textContent = ''; return; }
+
+  const last = marks[marks.length - 1], prev = marks[marks.length - 2];
+  const seg = last.distanceTo(prev);
+  const dh = Math.abs(last.y - prev.y);
+  const horiz = Math.hypot(last.x - prev.x, last.z - prev.z);
+
+  let total = 0;
+  for (let i = 1; i < marks.length; i++) total += marks[i].distanceTo(marks[i - 1]);
+  if (closed && marks.length > 2) total += marks[0].distanceTo(marks[marks.length - 1]);
+
+  main.textContent = seg.toFixed(3) + ' m';
+  key.textContent = 'último segmento · ' + marks.length + ' pontos';
+  let s = 'horizontal ' + horiz.toFixed(3) + ' m · desnível ' + dh.toFixed(3) + ' m<br>' +
+          (closed ? 'perímetro ' : 'percurso ') + total.toFixed(3) + ' m';
+  if (closed && marks.length > 2) s += ' · área ' + polygonArea(marks).toFixed(3) + ' m²';
+  sub.innerHTML = s;
+}
+
+/* ---------------- radar de topo ---------------- */
+const map = el('minimap'), mctx = map.getContext('2d'), MAP_R = 7;
 function drawMap(pose) {
   const S = map.width, C = S / 2, k = C / MAP_R;
   mctx.clearRect(0, 0, S, S);
-
-  mctx.strokeStyle = 'rgba(91,200,207,.28)';
-  mctx.lineWidth = 1;
-  for (const r of [2, 4, 6]) {
-    mctx.beginPath(); mctx.arc(C, C, r * k, 0, Math.PI * 2); mctx.stroke();
-  }
-
+  mctx.strokeStyle = 'rgba(91,200,207,.28)'; mctx.lineWidth = 1;
+  for (const r of [2, 4, 6]) { mctx.beginPath(); mctx.arc(C, C, r * k, 0, Math.PI * 2); mctx.stroke(); }
   const px = pose.transform.position.x, pz = pose.transform.position.z;
   mctx.fillStyle = 'rgba(228,233,237,.85)';
   for (let i = 0; i < count; i++) {
-    const dx = (positions[i * 3] - px) * k;
-    const dz = (positions[i * 3 + 2] - pz) * k;
+    const dx = (positions[i * 3] - px) * k, dz = (positions[i * 3 + 2] - pz) * k;
     if (dx * dx + dz * dz > C * C) continue;
     mctx.fillRect(C + dx, C + dz, 1.5, 1.5);
   }
-
   const q = pose.transform.orientation;
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w));
-  mctx.strokeStyle = '#E8A33D';
-  mctx.lineWidth = 2;
-  mctx.beginPath();
-  mctx.moveTo(C, C);
-  mctx.lineTo(C + fwd.x * 26, C + fwd.z * 26);
-  mctx.stroke();
-  mctx.fillStyle = '#E8A33D';
-  mctx.beginPath(); mctx.arc(C, C, 3.5, 0, Math.PI * 2); mctx.fill();
+  mctx.strokeStyle = '#E8A33D'; mctx.lineWidth = 2;
+  mctx.beginPath(); mctx.moveTo(C, C); mctx.lineTo(C + fwd.x * 26, C + fwd.z * 26); mctx.stroke();
+  mctx.fillStyle = '#E8A33D'; mctx.beginPath(); mctx.arc(C, C, 3.5, 0, Math.PI * 2); mctx.fill();
 }
 
-// ---------- laço ----------
+/* ---------------- laço XR ---------------- */
 function onFrame(t, frame) {
   if (!frame) return;
-  frames++;
-
+  frames++; frameId = (frameId + 1) % 100000;
   const pose = refSpace ? frame.getViewerPose(refSpace) : null;
   let status;
 
   if (!pose) {
     status = 'sem rastreamento';
-    if (torchOn && torchGuardAt && t - torchGuardAt > 3000) {
-      torchOff('A lanterna derrubou o rastreamento. Desliguei — a câmera deve voltar em alguns segundos.');
-    }
-  } else {
+    if (torchOn && torchGuardAt && t - torchGuardAt > 3000)
+      torchOff('A lanterna derrubou o rastreamento. Desliguei.');
+  } else if (mode === 'scan') {
     if (torchOn) torchGuardAt = t;
-    let gotDepth = false;
-    for (const view of pose.views) {
-      if (harvest(frame, view)) gotDepth = true;
-    }
-    status = gotDepth ? (centerDepth ? 'medindo' : 'fora de alcance') : 'sem profundidade';
-
+    let got = false;
+    for (const view of pose.views) if (harvest(frame, view)) got = true;
+    status = got ? (centerDepth ? 'medindo' : 'fora de alcance') : 'sem profundidade';
     points.geometry.setDrawRange(0, count);
     points.geometry.attributes.position.needsUpdate = true;
     points.geometry.attributes.color.needsUpdate = true;
+  } else {
+    if (torchOn) torchGuardAt = t;
+    const hits = hitSource ? frame.getHitTestResults(hitSource) : [];
+    if (hits.length) {
+      const hp = hits[0].getPose(refSpace);
+      reticle.visible = true;
+      reticle.matrix.fromArray(hp.transform.matrix);
+      status = 'superfície';
+    } else {
+      reticle.visible = false;
+      status = 'procurando superfície';
+    }
   }
 
   if (t - lastFpsAt > 500) {
@@ -322,88 +401,132 @@ function onFrame(t, frame) {
     el('r-center').textContent = centerDepth ? centerDepth.toFixed(2) : '—';
     const s = el('r-status');
     s.textContent = status;
-    s.style.color = status === 'medindo' ? 'var(--depth)' : 'var(--alert)';
+    s.style.color = (status === 'medindo' || status === 'superfície') ? 'var(--depth)' : 'var(--alert)';
     frames = 0; lastFpsAt = t;
-    if (pose) drawMap(pose);
+    if (pose && mode === 'scan') drawMap(pose);
   }
-
   renderer.render(scene, camera);
 }
 
-// ---------- sessão ----------
-startBtn.addEventListener('click', async () => {
-  startBtn.disabled = true;
+/* ---------------- sessão ---------------- */
+function showFor(m) {
+  el('minimap').classList.toggle('on', m === 'scan');
+  el('crosshair').classList.toggle('on', m === 'scan');
+  el('readouts').style.display = m === 'scan' ? 'flex' : 'none';
+  el('big').classList.toggle('on', m === 'measure');
+  el('undo').hidden = m !== 'measure';
+  el('close').hidden = m !== 'measure';
+  el('save').hidden = m !== 'scan';
+  el('clear').textContent = m === 'measure' ? 'Zerar' : 'Limpar';
+  if (m === 'measure') {
+    el('readouts').style.display = 'flex';
+    el('readouts').style.top = 'auto';
+    el('readouts').style.bottom = 'calc(max(16px,env(safe-area-inset-bottom)) + 64px)';
+  } else {
+    el('readouts').style.top = '';
+    el('readouts').style.bottom = '';
+  }
+}
 
-  // A raiz do overlay precisa estar renderizada ANTES do requestSession.
+async function startSession(m) {
+  mode = m;
+  buildScene();
+  showFor(m);
   launch.style.display = 'none';
   hud.classList.add('on');
 
+  const cfg = {
+    optionalFeatures: ['dom-overlay', 'local-floor'],
+    domOverlay: { root: hud }
+  };
+  if (m === 'scan') {
+    cfg.requiredFeatures = ['depth-sensing'];
+    cfg.depthSensing = { usagePreference: ['cpu-optimized'], dataFormatPreference: ['luminance-alpha', 'float32'] };
+  } else {
+    cfg.requiredFeatures = ['hit-test'];
+  }
+
   try {
-    session = await navigator.xr.requestSession('immersive-ar', {
-      requiredFeatures: ['depth-sensing'],
-      optionalFeatures: ['dom-overlay', 'local-floor'],
-      depthSensing: {
-        usagePreference: ['cpu-optimized'],
-        dataFormatPreference: ['luminance-alpha', 'float32']
-      },
-      domOverlay: { root: hud }
-    });
+    session = await navigator.xr.requestSession('immersive-ar', cfg);
   } catch (err) {
-    hud.classList.remove('on');
-    launch.style.display = 'flex';
-    diag.textContent = 'A sessão não abriu: ' + err.message + '. Em geral é profundidade não suportada neste aparelho.';
+    hud.classList.remove('on'); launch.style.display = 'block';
+    diag.textContent = 'Não abriu: ' + err.message +
+      (m === 'scan' ? ' — este aparelho provavelmente não fornece profundidade. A trena deve funcionar.' : '');
     diag.className = 'bad';
-    startBtn.disabled = false;
-    startBtn.textContent = 'Tentar de novo';
     return;
   }
 
   const overlayOk = session.domOverlayState && session.domOverlayState.type === 'screen';
-
-  if (!renderer) buildScene();
   renderer.xr.setReferenceSpaceType('local-floor');
   await renderer.xr.setSession(session);
   refSpace = renderer.xr.getReferenceSpace();
-  if (!refSpace) {
-    try { refSpace = await session.requestReferenceSpace('local'); } catch (e) {}
+  if (!refSpace) { try { refSpace = await session.requestReferenceSpace('local'); } catch (e) {} }
+
+  if (m === 'measure') {
+    try {
+      const vs = await session.requestReferenceSpace('viewer');
+      hitSource = await session.requestHitTestSource({ space: vs });
+    } catch (e) { toast('Hit-test indisponível: ' + e.message); }
+    session.addEventListener('select', placeMark);
+    updateMeasure();
   }
 
   renderer.setAnimationLoop(onFrame);
-
-  if (!overlayOk) {
-    toast('Sem DOM Overlay: os controles não aparecem sobre a câmera. Atualize o Chrome. A varredura segue funcionando — encerre pelo botão Voltar.');
-  }
+  if (!overlayOk) toast('Sem DOM Overlay: os controles não aparecem. Atualize o Chrome.');
 
   session.addEventListener('end', () => {
     releaseTorch();
     renderer.setAnimationLoop(null);
+    if (hitSource) { hitSource.cancel && hitSource.cancel(); hitSource = null; }
+    reticle.visible = false;
     hud.classList.remove('on');
-    launch.style.display = 'flex';
-    startBtn.disabled = false;
-    startBtn.textContent = 'Retomar varredura';
-    diag.textContent = count.toLocaleString('pt-BR') + ' pontos na memória. Retomar continua na mesma nuvem.';
+    launch.style.display = 'block';
     diag.className = '';
+    diag.textContent = mode === 'scan'
+      ? count.toLocaleString('pt-BR') + ' pontos na memória. Abra o visualizador ou salve o .ply.'
+      : marks.length + ' pontos marcados. Entrar de novo continua a medição.';
     session = null;
   });
-});
-
-el('stop').addEventListener('click', () => session && session.end());
-
-// ---------- lanterna ----------
-let toastTimer;
-function toast(msg) {
-  const t = el('toast');
-  t.textContent = msg;
-  t.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 6000);
 }
 
+el('m-scan').addEventListener('click', () => startSession('scan'));
+el('m-measure').addEventListener('click', () => startSession('measure'));
+el('stop').addEventListener('click', () => session && session.end());
+
+el('undo').addEventListener('click', () => {
+  if (!marks.length) return;
+  marks.pop(); closed = false;
+  const last = markGroup.children.filter(c => c.isMesh).pop();
+  if (last) markGroup.remove(last);
+  rebuildLines(); updateMeasure();
+});
+
+el('close').addEventListener('click', () => {
+  if (marks.length < 3) { toast('Marque pelo menos 3 pontos para fechar uma área.'); return; }
+  closed = !closed; rebuildLines(); updateMeasure();
+});
+
+el('clear').addEventListener('click', () => {
+  if (mode === 'measure') {
+    marks.length = 0; closed = false;
+    while (markGroup.children.length) markGroup.remove(markGroup.children[0]);
+    updateMeasure();
+  } else {
+    count = 0; voxels.clear();
+    points.geometry.setDrawRange(0, 0);
+    el('r-count').textContent = '0';
+  }
+});
+
+/* ---------------- lanterna ---------------- */
+let toastTimer;
+function toast(msg) {
+  const t = el('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 6000);
+}
 let torchTrack = null, torchOn = false, torchGuardAt = 0;
 const torchBtn = el('torch');
 
-// O ARCore segura a câmera principal. Tentamos as outras primeiro —
-// o LED é compartilhado, então acender por outro deviceId pode não gerar conflito.
 async function openTorch() {
   let ids = [];
   try {
@@ -411,63 +534,44 @@ async function openTorch() {
     ids = devs.filter(d => d.kind === 'videoinput').map(d => d.deviceId).reverse();
   } catch (e) {}
   ids.push(null);
-
   for (const id of ids) {
     const c = { video: { width: { ideal: 160 }, height: { ideal: 120 }, frameRate: { ideal: 2 } } };
-    if (id) c.video.deviceId = { exact: id };
-    else c.video.facingMode = { ideal: 'environment' };
-
+    if (id) c.video.deviceId = { exact: id }; else c.video.facingMode = { ideal: 'environment' };
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia(c); } catch (e) { continue; }
-
     const track = stream.getVideoTracks()[0];
     const caps = track.getCapabilities ? track.getCapabilities() : {};
     if (!caps.torch) { track.stop(); continue; }
-
-    torchTrack = track;
-    return;
+    torchTrack = track; return;
   }
   throw new Error('nenhuma câmera livre com lanterna');
 }
-
 function torchOff(msg) {
   if (torchTrack) {
     try { torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch (e) {}
-    torchTrack.stop();
-    torchTrack = null;
+    torchTrack.stop(); torchTrack = null;
   }
-  torchOn = false;
-  torchGuardAt = 0;
-  torchBtn.classList.remove('on');
-  torchBtn.setAttribute('aria-pressed', 'false');
+  torchOn = false; torchGuardAt = 0;
+  torchBtn.classList.remove('on'); torchBtn.setAttribute('aria-pressed', 'false');
   if (msg) toast(msg);
 }
-
+function releaseTorch() { torchOff(); }
 torchBtn.addEventListener('click', async () => {
   if (torchOn) { torchOff(); return; }
   try {
     if (!torchTrack) await openTorch();
     await torchTrack.applyConstraints({ advanced: [{ torch: true }] });
-    torchOn = true;
-    torchGuardAt = performance.now();
-    torchBtn.classList.add('on');
-    torchBtn.setAttribute('aria-pressed', 'true');
+    torchOn = true; torchGuardAt = performance.now();
+    torchBtn.classList.add('on'); torchBtn.setAttribute('aria-pressed', 'true');
     toast('Lanterna ligada. Se o rastreamento cair, desligo sozinho em 3 s.');
   } catch (e) {
-    torchOff('A câmera está reservada pelo ARCore e não há outra livre. Use a lanterna da barra de notificações ou uma luminária fixa.');
+    torchOff('Câmera reservada pelo ARCore e nenhuma outra livre. Use a lanterna da barra de notificações ou uma luz fixa.');
   }
 });
 
-function releaseTorch() { torchOff(); }
-
-el('clear').addEventListener('click', () => {
-  count = 0; voxels.clear();
-  points.geometry.setDrawRange(0, 0);
-  el('r-count').textContent = '0';
-});
-
+/* ---------------- exportar ---------------- */
 el('save').addEventListener('click', () => {
-  if (!count) return;
+  if (!count) { toast('Nada para salvar.'); return; }
   const head = 'ply\nformat ascii 1.0\nelement vertex ' + count +
     '\nproperty float x\nproperty float y\nproperty float z\n' +
     'property uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n';
@@ -479,16 +583,89 @@ el('save').addEventListener('click', () => {
   }
   const url = URL.createObjectURL(new Blob([head + rows.join('\n') + '\n'], { type: 'text/plain' }));
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'varredura-' + Date.now() + '.ply';
-  a.click();
+  a.href = url; a.download = 'varredura-' + Date.now() + '.ply'; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+});
+
+/* ---------------- visualizador ---------------- */
+function fitView() {
+  if (!count) return;
+  const box = new THREE.Box3();
+  const v = new THREE.Vector3();
+  for (let i = 0; i < count; i++) { v.fromArray(positions, i * 3); box.expandByPoint(v); }
+  const c = box.getCenter(new THREE.Vector3());
+  const r = box.getSize(new THREE.Vector3()).length() / 2 || 2;
+  controls.target.copy(c);
+  viewCam.position.set(c.x + r * 1.4, c.y + r * 0.7, c.z + r * 1.4);
+  viewCam.near = r / 200; viewCam.far = r * 40; viewCam.updateProjectionMatrix();
+  controls.update();
+  const s = box.getSize(new THREE.Vector3());
+  el('vinfo').innerHTML = '<b>' + count.toLocaleString('pt-BR') + '</b> pontos<br>caixa <b>' +
+    s.x.toFixed(2) + ' × ' + s.y.toFixed(2) + ' × ' + s.z.toFixed(2) + '</b> m';
+}
+
+function viewerLoop() { controls.update(); renderer.render(scene, viewCam); }
+
+el('m-view').addEventListener('click', () => {
+  buildScene();
+  if (!viewCam) {
+    viewCam = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 200);
+    controls = new OrbitControls(viewCam, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
+  }
+  points.geometry.setDrawRange(0, count);
+  points.geometry.attributes.position.needsUpdate = true;
+  points.geometry.attributes.color.needsUpdate = true;
+  reticle.visible = false;
+  launch.style.display = 'none';
+  viewerEl.classList.add('on');
+  scene.background = new THREE.Color(0x0F151C);
+  if (count) fitView();
+  else el('vinfo').innerHTML = 'Nuvem vazia. Faça uma varredura ou abra um .ply.';
+  renderer.setAnimationLoop(viewerLoop);
+});
+
+el('v-reset').addEventListener('click', fitView);
+el('v-back').addEventListener('click', () => {
+  renderer.setAnimationLoop(null);
+  scene.background = null;
+  viewerEl.classList.remove('on');
+  launch.style.display = 'block';
+});
+el('v-open').addEventListener('click', () => el('plyfile').click());
+
+el('plyfile').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const txt = await f.text();
+  const lines = txt.split('\n');
+  let i = 0, n = 0;
+  for (; i < lines.length; i++) {
+    if (lines[i].startsWith('element vertex')) n = parseInt(lines[i].split(/\s+/)[2], 10);
+    if (lines[i].trim() === 'end_header') { i++; break; }
+  }
+  count = 0; voxels.clear();
+  const step = Math.max(1, Math.ceil(n / MAX_POINTS));
+  for (let k = 0; k < n && count < MAX_POINTS; k += step) {
+    const p = lines[i + k];
+    if (!p) break;
+    const a = p.trim().split(/\s+/);
+    const j = count * 3;
+    positions[j] = +a[0]; positions[j + 1] = +a[1]; positions[j + 2] = +a[2];
+    if (a.length >= 6) { colors[j] = +a[3] / 255; colors[j + 1] = +a[4] / 255; colors[j + 2] = +a[5] / 255; }
+    else heightColor(+a[1], rgb), colors[j] = rgb[0], colors[j + 1] = rgb[1], colors[j + 2] = rgb[2];
+    count++;
+  }
+  points.geometry.setDrawRange(0, count);
+  points.geometry.attributes.position.needsUpdate = true;
+  points.geometry.attributes.color.needsUpdate = true;
+  fitView();
 });
 
 addEventListener('resize', () => {
   if (!renderer) return;
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  if (viewCam) { viewCam.aspect = innerWidth / innerHeight; viewCam.updateProjectionMatrix(); }
   renderer.setSize(innerWidth, innerHeight);
 });
 </script>

@@ -313,6 +313,11 @@ function onFrame(t, frame) {
 // ---------- sessão ----------
 startBtn.addEventListener('click', async () => {
   startBtn.disabled = true;
+
+  // A raiz do overlay precisa estar renderizada ANTES do requestSession.
+  launch.style.display = 'none';
+  hud.classList.add('on');
+
   try {
     session = await navigator.xr.requestSession('immersive-ar', {
       requiredFeatures: ['depth-sensing'],
@@ -324,6 +329,8 @@ startBtn.addEventListener('click', async () => {
       domOverlay: { root: hud }
     });
   } catch (err) {
+    hud.classList.remove('on');
+    launch.style.display = 'flex';
     diag.textContent = 'A sessão não abriu: ' + err.message + '. Em geral é profundidade não suportada neste aparelho.';
     diag.className = 'bad';
     startBtn.disabled = false;
@@ -331,14 +338,18 @@ startBtn.addEventListener('click', async () => {
     return;
   }
 
+  const overlayOk = session.domOverlayState && session.domOverlayState.type === 'screen';
+
   if (!renderer) buildScene();
   renderer.xr.setReferenceSpaceType('local-floor');
   await renderer.xr.setSession(session);
   refSpace = renderer.xr.getReferenceSpace();
 
-  launch.style.display = 'none';
-  hud.classList.add('on');
   renderer.setAnimationLoop(onFrame);
+
+  if (!overlayOk) {
+    toast('Sem DOM Overlay: os controles não aparecem sobre a câmera. Atualize o Chrome. A varredura segue funcionando — encerre pelo botão Voltar.');
+  }
 
   session.addEventListener('end', () => {
     releaseTorch();
